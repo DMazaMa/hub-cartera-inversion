@@ -1,11 +1,18 @@
 import pandas as pd
 from dash import Dash, Input, Output, ctx, dcc, html
 
-from src.etl import DATA_DIR
-from src.graphics import grafico_evolucion
+from src.etl import DATA_DIR, leer_tabla, normalize_columns
+from src.graphics import grafico_evolucion, grafico_plusvalias
 
 posiciones = pd.read_csv(DATA_DIR / "posiciones.csv")
 evolucion = pd.read_csv(DATA_DIR / "evolucion.csv")
+operaciones = pd.read_csv(DATA_DIR / "operaciones_limpias.csv")
+operaciones["fecha"] = pd.to_datetime(operaciones["fecha"])
+activos = normalize_columns(leer_tabla(DATA_DIR / "activos.csv"))
+
+nombres = {}
+for i in range(len(activos)):
+    nombres[activos.loc[i, "isin"]] = activos.loc[i, "nombre"]
 
 valor_total = posiciones["valor"].sum()
 invertido_total = posiciones["invertido"].sum()
@@ -51,6 +58,96 @@ def tarjeta(titulo: str, valor: str, color: str = "black") -> html.Div:
         },
     )
 
+
+estilo_celda = {
+    "padding": "8px 12px",
+    "border-bottom": "1px solid gainsboro",
+    "text-align": "right",
+    "white-space": "nowrap",
+}
+estilo_cabecera = {
+    "padding": "8px 12px",
+    "backgroundColor": "midnightblue",
+    "color": "white",
+    "text-align": "right",
+    "white-space": "nowrap",
+}
+
+
+def tabla(cabeceras: list, filas: list) -> html.Div:
+    primera_cabecera = estilo_cabecera.copy()
+    primera_cabecera["text-align"] = "left"
+    primera_celda = estilo_celda.copy()
+    primera_celda["text-align"] = "left"
+
+    cabecera = []
+    for j in range(len(cabeceras)):
+        if j == 0:
+            cabecera.append(html.Th(children=[cabeceras[j]], style=primera_cabecera))
+        else:
+            cabecera.append(html.Th(children=[cabeceras[j]], style=estilo_cabecera))
+    cuerpo = []
+    for fila in filas:
+        celdas = []
+        for j in range(len(fila)):
+            if j == 0:
+                celdas.append(html.Td(children=[fila[j]], style=primera_celda))
+            else:
+                celdas.append(html.Td(children=[fila[j]], style=estilo_celda))
+        cuerpo.append(html.Tr(children=celdas))
+    return html.Div(
+        children=[
+            html.Table(
+                children=[html.Thead(html.Tr(cabecera)), html.Tbody(cuerpo)],
+                style={
+                    "border-collapse": "collapse",
+                    "width": "100%",
+                    "backgroundColor": "white",
+                    "font-size": "14px",
+                },
+            )
+        ],
+        style={"overflow-x": "auto", "margin": "10px"},
+    )
+
+
+filas_cartera = []
+for i in range(len(posiciones)):
+    plusvalia = posiciones.loc[i, "plusvalia"]
+    filas_cartera.append(
+        [
+            html.B(posiciones.loc[i, "nombre"]),
+            formato(posiciones.loc[i, "titulos"], ""),
+            formato(posiciones.loc[i, "precio_medio"]),
+            formato(posiciones.loc[i, "precio_actual"]),
+            formato(posiciones.loc[i, "valor"]),
+            html.Span(formato(plusvalia), style={"color": color_signo(plusvalia)}),
+            html.Span(
+                formato(posiciones.loc[i, "plusvalia_pct"], " %"),
+                style={"color": color_signo(plusvalia)},
+            ),
+            formato(posiciones.loc[i, "peso"], " %"),
+        ]
+    )
+
+cabeceras_cartera = [
+    "Activo",
+    "Títulos",
+    "Precio medio",
+    "Precio actual",
+    "Valor",
+    "Plusvalía",
+    "Plusvalía %",
+    "Peso",
+]
+
+options_dropdown_activo = []
+for isin in nombres.keys():
+    options_dropdown_activo.append({"label": nombres[isin], "value": isin})
+
+options_dropdown_tipo = []
+for tipo in ["compra", "venta", "dividendo"]:
+    options_dropdown_tipo.append({"label": tipo.capitalize(), "value": tipo})
 
 cinta = []
 for i in range(len(posiciones)):
@@ -165,10 +262,74 @@ app.layout = html.Div(
             ],
             id="seccion_inicio",
         ),
-        html.Div(children=[html.H2("Cartera")], id="seccion_cartera"),
+        html.Div(
+            children=[
+                html.H2(
+                    children=["Posiciones de la cartera"],
+                    style={"margin": "10px"},
+                ),
+                tabla(cabeceras_cartera, filas_cartera),
+                dcc.Graph(
+                    figure=grafico_plusvalias(posiciones),
+                    id="figura_plusvalias",
+                    style={"margin": "10px"},
+                ),
+            ],
+            id="seccion_cartera",
+        ),
         html.Div(children=[html.H2("Composición")], id="seccion_composicion"),
         html.Div(children=[html.H2("Rentabilidad")], id="seccion_rentabilidad"),
-        html.Div(children=[html.H2("Operaciones")], id="seccion_operaciones"),
+        html.Div(
+            children=[
+                html.H2(
+                    children=["Registro de operaciones"],
+                    style={"margin": "10px"},
+                ),
+                html.Div(
+                    children=[
+                        dcc.Dropdown(
+                            options=options_dropdown_activo,
+                            placeholder="Todos los activos",
+                            id="dropdown_activo",
+                            style={
+                                "display": "inline-block",
+                                "width": "250px",
+                                "margin": "5px 10px 5px 0px",
+                                "vertical-align": "middle",
+                            },
+                        ),
+                        dcc.Dropdown(
+                            options=options_dropdown_tipo,
+                            placeholder="Todos los tipos",
+                            id="dropdown_tipo",
+                            style={
+                                "display": "inline-block",
+                                "width": "200px",
+                                "margin": "5px 10px 5px 0px",
+                                "vertical-align": "middle",
+                            },
+                        ),
+                        dcc.DatePickerRange(
+                            min_date_allowed=operaciones["fecha"].min(),
+                            max_date_allowed=operaciones["fecha"].max(),
+                            start_date_placeholder_text="Desde",
+                            end_date_placeholder_text="Hasta",
+                            display_format="DD/MM/YYYY",
+                            id="fechas_operaciones",
+                            style={
+                                "display": "inline-block",
+                                "width": "320px",
+                                "vertical-align": "middle",
+                            },
+                        ),
+                    ],
+                    style={"margin": "10px"},
+                ),
+                html.P(id="resumen_operaciones", style={"margin": "10px"}),
+                html.Div(id="tabla_operaciones"),
+            ],
+            id="seccion_operaciones",
+        ),
     ],
     style={
         "font-family": "Arial",
@@ -214,6 +375,46 @@ def mostrar_seccion(n_inicio, n_cartera, n_composicion, n_rentabilidad, n_operac
             estilo["color"] = "steelblue"
         estilos_botones.append(estilo)
     return tuple(estilos_secciones + estilos_botones)
+
+
+@app.callback(
+    Output("tabla_operaciones", "children"),
+    Output("resumen_operaciones", "children"),
+    Input("dropdown_activo", "value"),
+    Input("dropdown_tipo", "value"),
+    Input("fechas_operaciones", "start_date"),
+    Input("fechas_operaciones", "end_date"),
+)
+def filtrar_operaciones(activo, tipo, inicio, fin):
+    df = operaciones.copy()
+    if activo:
+        df = df[df["isin"] == activo]
+    if tipo:
+        df = df[df["tipo"] == tipo]
+    if inicio:
+        df = df[df["fecha"] >= inicio]
+    if fin:
+        df = df[df["fecha"] <= fin]
+    df = df.sort_values("fecha", ascending=False).reset_index(drop=True)
+
+    filas = []
+    for i in range(len(df)):
+        filas.append(
+            [
+                df.loc[i, "fecha"].strftime("%d/%m/%Y"),
+                df.loc[i, "tipo"].capitalize(),
+                nombres[df.loc[i, "isin"]],
+                formato(df.loc[i, "titulos"], ""),
+                formato(df.loc[i, "precio"]),
+                formato(df.loc[i, "comision"]),
+                formato(df.loc[i, "importe"]),
+            ]
+        )
+    cabeceras = ["Fecha", "Tipo", "Activo", "Títulos", "Precio", "Comisión", "Importe"]
+    resumen = (
+        str(len(df)) + " operaciones | Importe total: " + formato(df["importe"].sum())
+    )
+    return tabla(cabeceras, filas), resumen
 
 
 if __name__ == "__main__":
