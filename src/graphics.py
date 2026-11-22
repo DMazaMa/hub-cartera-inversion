@@ -1,5 +1,17 @@
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+colores_pie = [
+    "midnightblue",
+    "steelblue",
+    "lightsteelblue",
+    "darkorange",
+    "gold",
+    "mediumseagreen",
+    "firebrick",
+    "gray",
+]
 
 
 def grafico_evolucion(evolucion: pd.DataFrame) -> go.Figure:
@@ -58,5 +70,139 @@ def grafico_plusvalias(posiciones: pd.DataFrame) -> go.Figure:
         xaxis_title="Plusvalía (%)",
         plot_bgcolor="white",
         margin=dict(l=40, r=40, t=60, b=40),
+    )
+    return fig
+
+
+def grafico_pesos(posiciones: pd.DataFrame) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(
+        go.Pie(
+            labels=posiciones["nombre"],
+            values=posiciones["valor"],
+            textinfo="label+percent",
+            textposition="inside",
+            hole=0.5,
+            sort=False,
+            showlegend=False,
+            marker=dict(colors=colores_pie),
+        )
+    )
+    fig.update_layout(
+        title="Peso de cada posición", margin=dict(l=20, r=20, t=60, b=20)
+    )
+    return fig
+
+
+def grafico_composicion(posiciones: pd.DataFrame, columnas: list) -> go.Figure:
+    titulos = {"clase": "Clase de activo", "sector": "Sector", "region": "Región"}
+    nombres_columnas = []
+    for col in columnas:
+        nombres_columnas.append(titulos[col])
+
+    fig = make_subplots(
+        rows=1,
+        cols=len(columnas),
+        specs=[[{"type": "domain"}] * len(columnas)],
+        subplot_titles=nombres_columnas,
+    )
+    for col in columnas:
+        reparto = posiciones.groupby(col, as_index=False)["valor"].sum()
+        fig.add_trace(
+            go.Pie(
+                labels=reparto[col],
+                values=reparto["valor"],
+                textinfo="label+percent",
+                insidetextorientation="radial",
+                textposition="inside",
+                sort=False,
+                showlegend=False,
+                hole=0.5,
+                name=titulos[col],
+                marker=dict(colors=colores_pie),
+            ),
+            row=1,
+            col=columnas.index(col) + 1,
+        )
+    fig.update_traces(textfont_size=12)
+    fig.update_layout(margin=dict(l=20, r=20, t=60, b=20))
+    return fig
+
+
+def grafico_comparacion(
+    rentabilidades: pd.DataFrame, indice: pd.DataFrame, nombre: str
+) -> go.Figure:
+    inicio = rentabilidades["fecha"].min()
+    serie = indice[indice["fecha"] >= inicio]
+    base = serie["precio"].iloc[0]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=rentabilidades["fecha"],
+            y=rentabilidades["rentabilidad"],
+            mode="lines",
+            line=dict(color="steelblue", width=2),
+            name="Mi cartera",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=serie["fecha"],
+            y=(serie["precio"] / base - 1) * 100,
+            mode="lines",
+            line=dict(color="darkorange"),
+            name=nombre,
+        )
+    )
+    fig.update_layout(
+        title="Rentabilidad acumulada frente a " + nombre,
+        yaxis_title="Rentabilidad (%)",
+        plot_bgcolor="white",
+        legend=dict(orientation="h", y=-0.15),
+        margin=dict(l=40, r=20, t=60, b=40),
+    )
+    return fig
+
+
+def grafico_mensual(mensual: pd.DataFrame) -> go.Figure:
+    colores = []
+    for valor in mensual["rentabilidad"]:
+        if valor >= 0:
+            colores.append("mediumseagreen")
+        else:
+            colores.append("firebrick")
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(x=mensual["mes"], y=mensual["rentabilidad"], marker_color=colores)
+    )
+    fig.update_layout(
+        title="Rentabilidad mensual",
+        yaxis_title="Rentabilidad (%)",
+        plot_bgcolor="white",
+        bargap=0.1,
+        margin=dict(l=40, r=20, t=60, b=40),
+    )
+    return fig
+
+
+def grafico_drawdown(rentabilidades: pd.DataFrame) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=rentabilidades["fecha"],
+            y=rentabilidades["drawdown"],
+            mode="lines",
+            line=dict(color="firebrick"),
+            fill="tozeroy",
+            name="Drawdown",
+        )
+    )
+    fig.update_layout(
+        title="Caída desde máximos (drawdown)",
+        yaxis_title="Caída (%)",
+        plot_bgcolor="white",
+        margin=dict(l=40, r=20, t=60, b=40),
     )
     return fig

@@ -1,11 +1,17 @@
 import pandas as pd
-from dash import Dash, Input, Output, ctx, dcc, html
+import plotly.graph_objects as go
+from dash import Dash, Input, Output, State, ctx, dcc, html
 
-from src.etl import DATA_DIR, leer_tabla, normalize_columns
-from src.graphics import grafico_evolucion, grafico_plusvalias
+from src.etl import DATA_DIR, indices, leer_tabla, normalize_columns
+from src.etl import rentabilidad_mensual
+from src.graphics import grafico_comparacion, grafico_composicion
+from src.graphics import grafico_drawdown, grafico_evolucion, grafico_mensual
+from src.graphics import grafico_pesos, grafico_plusvalias
 
 posiciones = pd.read_csv(DATA_DIR / "posiciones.csv")
 evolucion = pd.read_csv(DATA_DIR / "evolucion.csv")
+precios_indices = pd.read_csv(DATA_DIR / "indices.csv")
+mensual = rentabilidad_mensual(evolucion)
 operaciones = pd.read_csv(DATA_DIR / "operaciones_limpias.csv")
 operaciones["fecha"] = pd.to_datetime(operaciones["fecha"])
 activos = normalize_columns(leer_tabla(DATA_DIR / "activos.csv"))
@@ -18,6 +24,15 @@ valor_total = posiciones["valor"].sum()
 invertido_total = posiciones["invertido"].sum()
 plusvalia_total = valor_total - invertido_total
 dividendos_total = posiciones["dividendos"].sum()
+
+rentabilidad_total = evolucion["rentabilidad"].iloc[-1]
+volatilidad = evolucion["rendimiento"].std() * (252**0.5) * 100
+maximo_drawdown = evolucion["drawdown"].min()
+anio_actual = evolucion["fecha"].iloc[-1][:4]
+acumulado = 1
+for r in evolucion[evolucion["fecha"] >= anio_actual + "-01-01"]["rendimiento"]:
+    acumulado = acumulado * (1 + r)
+rentabilidad_ytd = (acumulado - 1) * 100
 
 secciones = ["Inicio", "Cartera", "Composición", "Rentabilidad", "Operaciones"]
 ids_secciones = ["inicio", "cartera", "composicion", "rentabilidad", "operaciones"]
@@ -149,6 +164,16 @@ options_dropdown_tipo = []
 for tipo in ["compra", "venta", "dividendo"]:
     options_dropdown_tipo.append({"label": tipo.capitalize(), "value": tipo})
 
+options_checklist = [
+    {"value": "clase", "label": "Clase de activo"},
+    {"value": "sector", "label": "Sector"},
+    {"value": "region", "label": "Región"},
+]
+
+options_dropdown_indice = []
+for nombre in indices.keys():
+    options_dropdown_indice.append({"label": nombre, "value": nombre})
+
 cinta = []
 for i in range(len(posiciones)):
     variacion = posiciones.loc[i, "variacion_dia"]
@@ -277,8 +302,119 @@ app.layout = html.Div(
             ],
             id="seccion_cartera",
         ),
-        html.Div(children=[html.H2("Composición")], id="seccion_composicion"),
-        html.Div(children=[html.H2("Rentabilidad")], id="seccion_rentabilidad"),
+        html.Div(
+            children=[
+                html.H2(
+                    children=["Composición de la cartera"],
+                    style={"margin": "10px"},
+                ),
+                dcc.Graph(
+                    figure=grafico_pesos(posiciones),
+                    id="figura_pesos",
+                    style={"margin": "10px"},
+                ),
+                html.H3(
+                    children=["¿Cómo está repartida mi cartera?"],
+                    style={"margin": "20px 10px 10px 10px"},
+                ),
+                html.Div(
+                    children=[
+                        dcc.Checklist(
+                            options=options_checklist,
+                            value=["clase", "sector", "region"],
+                            labelStyle={
+                                "display": "inline-block",
+                                "font-size": "16px",
+                                "margin-right": "15px",
+                            },
+                            id="checklist_composicion",
+                            style={"display": "inline-block"},
+                        ),
+                        html.Button(
+                            children=["Mostrar"],
+                            id="boton_composicion_mostrar",
+                            n_clicks=0,
+                            style={
+                                "backgroundColor": "steelblue",
+                                "color": "white",
+                                "height": "35px",
+                                "width": "100px",
+                                "margin": "5px 0px",
+                                "border": "none",
+                                "border-radius": "5px",
+                                "cursor": "pointer",
+                            },
+                        ),
+                    ],
+                    style={"margin": "10px"},
+                ),
+                dcc.Graph(
+                    id="pie_charts",
+                    style={"display": "none"},
+                ),
+            ],
+            id="seccion_composicion",
+        ),
+        html.Div(
+            children=[
+                html.H2(
+                    children=["Rentabilidad de la cartera"],
+                    style={"margin": "10px"},
+                ),
+                html.Div(
+                    children=[
+                        tarjeta(
+                            "Rentabilidad total",
+                            formato(rentabilidad_total, " %"),
+                            color_signo(rentabilidad_total),
+                        ),
+                        tarjeta(
+                            "Rentabilidad " + anio_actual,
+                            formato(rentabilidad_ytd, " %"),
+                            color_signo(rentabilidad_ytd),
+                        ),
+                        tarjeta("Volatilidad anual", formato(volatilidad, " %")),
+                        tarjeta(
+                            "Máxima caída",
+                            formato(maximo_drawdown, " %"),
+                            "firebrick",
+                        ),
+                    ],
+                ),
+                html.Div(
+                    children=[
+                        html.P(
+                            children=["Comparar con:"],
+                            style={"display": "inline-block", "margin-right": "10px"},
+                        ),
+                        dcc.Dropdown(
+                            options=options_dropdown_indice,
+                            value="MSCI World",
+                            clearable=False,
+                            id="dropdown_indice",
+                            style={
+                                "display": "inline-block",
+                                "width": "200px",
+                                "vertical-align": "middle",
+                            },
+                        ),
+                    ],
+                    style={"margin": "10px"},
+                ),
+                dcc.Graph(id="figura_comparacion", style={"margin": "10px"}),
+                dcc.Graph(
+                    figure=grafico_mensual(mensual),
+                    id="figura_mensual",
+                    style={"margin": "10px"},
+                ),
+                dcc.Graph(
+                    figure=grafico_drawdown(evolucion),
+                    id="figura_drawdown",
+                    style={"margin": "10px"},
+                ),
+            ],
+            id="seccion_rentabilidad",
+        ),
         html.Div(
             children=[
                 html.H2(
@@ -415,6 +551,29 @@ def filtrar_operaciones(activo, tipo, inicio, fin):
         str(len(df)) + " operaciones | Importe total: " + formato(df["importe"].sum())
     )
     return tabla(cabeceras, filas), resumen
+
+
+@app.callback(
+    Output("pie_charts", "figure"),
+    Output("pie_charts", "style"),
+    Input("boton_composicion_mostrar", "n_clicks"),
+    State("checklist_composicion", "value"),
+)
+def checklist_callback(n_clicks, checklist_value):
+    if (checklist_value is None) or (checklist_value == []):
+        return (go.Figure(data=[], layout={}), {"display": "none"})
+    else:
+        fig = grafico_composicion(posiciones, checklist_value)
+        return (fig, {"display": "block", "margin": "10px"})
+
+
+@app.callback(
+    Output("figura_comparacion", "figure"),
+    Input("dropdown_indice", "value"),
+)
+def comparar_indice(nombre):
+    indice = precios_indices[precios_indices["ticker"] == indices[nombre]]
+    return grafico_comparacion(evolucion, indice, nombre)
 
 
 if __name__ == "__main__":
