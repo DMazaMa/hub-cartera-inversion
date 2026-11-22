@@ -127,6 +127,7 @@ def calcular_posiciones(
             {
                 "isin": isin,
                 "ticker": ticker,
+                "nombre": activos.loc[i, "nombre"],
                 "activo": activos.loc[i, "activo"],
                 "clase": activos.loc[i, "clase"],
                 "sector": activos.loc[i, "sector"],
