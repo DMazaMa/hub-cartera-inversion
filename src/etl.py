@@ -31,6 +31,31 @@ def normalize_columns(frame: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index(drop=True)
 
 
+def validar_operaciones(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    work = normalize_columns(frame)
+    work["fecha"] = pd.to_datetime(work["fecha"], errors="coerce")
+    for col in ["titulos", "precio", "comision"]:
+        work[col] = pd.to_numeric(work[col], errors="coerce")
+    work["comision"] = work["comision"].fillna(0)
+    work["tipo"] = work["tipo"].astype("string").str.lower()
+    work = work.drop_duplicates()
+    ok = (
+        work["fecha"].notna()
+        & work["isin"].notna()
+        & work["tipo"].isin(["compra", "venta", "dividendo"])
+        & work["titulos"].notna()
+        & (work["titulos"] > 0)
+        & work["precio"].notna()
+        & (work["precio"] > 0)
+        & (work["comision"] >= 0)
+    )
+    validos = work.loc[ok].copy()
+    errores = work.loc[~ok].copy()
+    validos["importe"] = validos["titulos"] * validos["precio"]
+    validos = validos.sort_values("fecha").reset_index(drop=True)
+    return validos, errores
+
+
 def buscar_ticker(isin: str) -> str:
     response = requests.get(
         url_yahoo + "v1/finance/search?q={}".format(isin), headers=headers

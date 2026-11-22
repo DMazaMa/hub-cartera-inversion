@@ -1,0 +1,81 @@
+Fecha,Tipo,ISIN,Activo,Titulos,Precio,Comision
+2024-02-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.5248,42.5561,0.0
+2024-02-12,Compra,IE00B4L5Y983,iShares Core MSCI World UCITS ETF,20.0,87.65,1.95
+2024-03-04,Compra,ES0113900J37,Banco Santander,400.0,3.856,3.0
+2024-03-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.4576,43.3822,0.0
+2024-04-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.368,44.5374,0.0
+2024-04-15,Compra,ES0144580Y14,Iberdrola,120.0,11.26,3.0
+2024-05-02,Dividendo,ES0113900J37,Banco Santander,400.0,0.095,0.0
+2024-05-06,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.3622,44.6133,0.0
+2024-06-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.2919,45.5662,0.0
+2024-07-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.6196,61.7447,0.0
+2024-07-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.187,47.0667,0.0
+2024-07-31,Dividendo,ES0144580Y14,Iberdrola,120.0,0.315,0.0
+2024-08-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.7628,56.7275,0.0
+2024-08-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.4614,43.335,0.0
+2024-09-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.2687,45.8904,0.0
+2024-09-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.6746,59.7156,0.0
+2024-09-16,Compra,ES0148396007,Inditex,40.0,50.38,3.0
+2024-10-07,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.1363,47.8267,0.0
+2024-10-07,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.6016,62.4383,0.0
+2024-11-04,Dividendo,ES0148396007,Inditex,40.0,0.77,0.0
+2024-11-04,Dividendo,ES0113900J37,Banco Santander,400.0,0.1,0.0
+2024-11-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.5664,63.8411,0.0
+2024-11-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.1022,48.3531,0.0
+2024-12-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.4448,69.2151,0.0
+2024-12-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.8839,52.0132,0.0
+2025-01-06,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.4429,69.306,0.0
+2025-01-06,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.8973,51.7722,0.0
+2025-01-20,Compra,ES0144580Y14,Iberdrola,60.0,13.235,3.0
+2025-01-30,Dividendo,ES0144580Y14,Iberdrola,180.0,0.23,0.0
+2025-02-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.8395,52.8265,0.0
+2025-02-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.4255,70.1496,0.0
+2025-03-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.5262,65.5201,0.0
+2025-03-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.9851,50.2502,0.0
+2025-03-10,Compra,IE00B4L5Y983,iShares Core MSCI World UCITS ETF,15.0,98.43,1.95
+2025-04-07,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.7865,55.9754,0.0
+2025-04-07,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.4954,42.9134,0.0
+2025-05-02,Dividendo,ES0113900J37,Banco Santander,400.0,0.105,0.0
+2025-05-02,Dividendo,ES0148396007,Inditex,40.0,0.84,0.0
+2025-05-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.6604,60.2272,0.0
+2025-05-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.1929,46.9786,0.0
+2025-06-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.5945,62.7155,0.0
+2025-06-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.0683,48.8866,0.0
+2025-07-07,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.5563,64.2567,0.0
+2025-07-07,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,3.0279,49.5392,0.0
+2025-07-31,Dividendo,ES0144580Y14,Iberdrola,180.0,0.404,0.0
+2025-08-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.516,65.9638,0.0
+2025-08-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.9617,50.646,0.0
+2025-09-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.9102,51.5422,0.0
+2025-09-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.4935,66.9551,0.0
+2025-10-06,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.7951,53.6647,0.0
+2025-10-06,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.4329,69.7871,0.0
+2025-10-06,Venta,ES0113900J37,Banco Santander,150.0,8.693,3.0
+2025-11-03,Dividendo,ES0113900J37,Banco Santander,250.0,0.115,0.0
+2025-11-03,Dividendo,ES0148396007,Inditex,40.0,0.84,0.0
+2025-11-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.7345,54.8546,0.0
+2025-11-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.3919,71.8447,0.0
+2025-12-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.3958,71.6429,0.0
+2025-12-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.7329,54.8873,0.0
+2026-01-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.7085,55.3803,0.0
+2026-01-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.3953,71.6694,0.0
+2026-02-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.4267,70.0935,0.0
+2026-02-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.7437,54.6707,0.0
+2026-03-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.3935,71.7628,0.0
+2026-03-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.6886,55.792,0.0
+2026-04-07,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.4363,69.6241,0.0
+2026-04-07,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.7623,54.3031,0.0
+2026-05-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.3238,75.541,0.0
+2026-05-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.582,58.0942,0.0
+2026-06-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.284,77.883,0.0
+2026-06-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.503,59.9289,0.0
+2026-07-06,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.2418,80.5308,0.0
+2026-07-06,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.4151,62.1099,0.0
+2026-08-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.2259,81.5757,0.0
+2026-08-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.3857,62.8747,0.0
+2026-09-07,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.234,81.0382,0.0
+2026-09-07,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.3931,62.6797,0.0
+2026-10-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.3237,64.5535,0.0
+2026-10-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.1801,84.7406,0.0
+2026-11-05,Compra,IE00B03HCZ61,Vanguard Global Stock Index Fund EUR Acc,2.4207,61.9651,0.0
+2026-11-05,Compra,IE0032126645,Vanguard U.S. 500 Stock Index Fund EUR Acc,1.2491,80.0567,0.0
