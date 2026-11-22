@@ -8,6 +8,8 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 url_yahoo = "https://query1.finance.yahoo.com/"
 headers = {"User-Agent": "Mozilla/5.0"}
 
+indices = {"MSCI World": "IWDA.AS", "S&P 500": "VUSA.AS", "IBEX 35": "^IBEX"}
+
 
 def leer_tabla(path: Path) -> pd.DataFrame:
     path = Path(path)
@@ -86,12 +88,14 @@ def descargar_precios(ticker: str, periodo: str = "5y") -> pd.DataFrame:
     return precios.reset_index(drop=True)
 
 
-def descargar_precios_cartera(tickers: list) -> pd.DataFrame:
+def descargar_precios_cartera(
+    tickers: list, fichero: str = "precios.csv"
+) -> pd.DataFrame:
     tablas = []
     for ticker in tickers:
         tablas.append(descargar_precios(ticker))
     precios = pd.concat(tablas, ignore_index=True)
-    precios.to_csv(DATA_DIR / "precios.csv", index=False)
+    precios.to_csv(DATA_DIR / fichero, index=False)
     return precios
 
 
@@ -189,17 +193,60 @@ def calcular_evolucion(
     return evolucion
 
 
+def calcular_rentabilidades(evolucion: pd.DataFrame) -> pd.DataFrame:
+    df = evolucion.copy()
+    rendimientos = [0.0]
+    for i in range(1, len(df)):
+        flujo = df.loc[i, "aportado"] - df.loc[i - 1, "aportado"]
+        anterior = df.loc[i - 1, "valor"]
+        if anterior > 0:
+            rendimientos.append((df.loc[i, "valor"] - flujo) / anterior - 1)
+        else:
+            rendimientos.append(0.0)
+
+    acumulado = 1
+    maximo = 1
+    rentabilidad = []
+    drawdown = []
+    for r in rendimientos:
+        acumulado = acumulado * (1 + r)
+        if acumulado > maximo:
+            maximo = acumulado
+        rentabilidad.append((acumulado - 1) * 100)
+        drawdown.append((acumulado / maximo - 1) * 100)
+
+    df["rendimiento"] = rendimientos
+    df["rentabilidad"] = rentabilidad
+    df["drawdown"] = drawdown
+    return df
+
+
+def rentabilidad_mensual(rentabilidades: pd.DataFrame) -> pd.DataFrame:
+    df = rentabilidades.copy()
+    df["mes"] = pd.to_datetime(df["fecha"]).dt.strftime("%Y-%m")
+    filas = []
+    for mes in df["mes"].unique():
+        datos = df[df["mes"] == mes]
+        acumulado = 1
+        for r in datos["rendimiento"]:
+            acumulado = acumulado * (1 + r)
+        filas.append({"mes": mes, "rentabilidad": (acumulado - 1) * 100})
+    return pd.DataFrame(filas)
+
+
 def actualizar_datos(fichero: str = "operaciones_ejemplo.csv") -> None:
     operaciones = leer_tabla(DATA_DIR / fichero)
     validos, errores = validar_operaciones(operaciones)
     activos = normalize_columns(leer_tabla(DATA_DIR / "activos.csv"))
     precios = descargar_precios_cartera(activos["ticker"].tolist())
+    descargar_precios_cartera(list(indices.values()), "indices.csv")
     posiciones = calcular_posiciones(validos, activos, precios)
     evolucion = calcular_evolucion(validos, activos, precios)
+    rentabilidades = calcular_rentabilidades(evolucion)
 
     validos.to_csv(DATA_DIR / "operaciones_limpias.csv", index=False)
     posiciones.to_csv(DATA_DIR / "posiciones.csv", index=False)
-    evolucion.to_csv(DATA_DIR / "evolucion.csv", index=False)
+    rentabilidades.to_csv(DATA_DIR / "evolucion.csv", index=False)
     print("operaciones válidas:", len(validos), "| errores:", len(errores))
     print("posiciones:", len(posiciones), "| días de evolución:", len(evolucion))
 
