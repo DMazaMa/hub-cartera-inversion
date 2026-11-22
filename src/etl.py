@@ -93,3 +93,115 @@ def descargar_precios_cartera(tickers: list) -> pd.DataFrame:
     precios = pd.concat(tablas, ignore_index=True)
     precios.to_csv(DATA_DIR / "precios.csv", index=False)
     return precios
+
+
+def calcular_posiciones(
+    validos: pd.DataFrame, activos: pd.DataFrame, precios: pd.DataFrame
+) -> pd.DataFrame:
+    filas = []
+    for i in range(len(activos)):
+        isin = activos.loc[i, "isin"]
+        ticker = activos.loc[i, "ticker"]
+        ops = validos[validos["isin"] == isin]
+        compras = ops[ops["tipo"] == "compra"]
+        ventas = ops[ops["tipo"] == "venta"]
+        dividendos = ops[ops["tipo"] == "dividendo"]
+
+        titulos_comprados = compras["titulos"].sum()
+        if titulos_comprados == 0:
+            continue
+        coste = compras["importe"].sum() + compras["comision"].sum()
+        precio_medio = coste / titulos_comprados
+        titulos = titulos_comprados - ventas["titulos"].sum()
+        realizada = (
+            ventas["importe"].sum()
+            - ventas["comision"].sum()
+            - ventas["titulos"].sum() * precio_medio
+        )
+
+        serie = precios[precios["ticker"] == ticker]
+        precio_actual = serie["precio"].iloc[-1]
+        precio_anterior = serie["precio"].iloc[-2]
+
+        filas.append(
+            {
+                "isin": isin,
+                "ticker": ticker,
+                "activo": activos.loc[i, "activo"],
+                "clase": activos.loc[i, "clase"],
+                "sector": activos.loc[i, "sector"],
+                "region": activos.loc[i, "region"],
+                "titulos": titulos,
+                "precio_medio": precio_medio,
+                "precio_actual": precio_actual,
+                "variacion_dia": (precio_actual / precio_anterior - 1) * 100,
+                "invertido": titulos * precio_medio,
+                "valor": titulos * precio_actual,
+                "plusvalia_realizada": realizada,
+                "dividendos": dividendos["importe"].sum(),
+            }
+        )
+
+    posiciones = pd.DataFrame(filas)
+    posiciones = posiciones[posiciones["titulos"] > 0].reset_index(drop=True)
+    posiciones["plusvalia"] = posiciones["valor"] - posiciones["invertido"]
+    posiciones["plusvalia_pct"] = (
+        posiciones["plusvalia"] / posiciones["invertido"] * 100
+    )
+    posiciones["peso"] = posiciones["valor"] / posiciones["valor"].sum() * 100
+    return posiciones.sort_values("valor", ascending=False).reset_index(drop=True)
+
+
+def calcular_evolucion(
+    validos: pd.DataFrame, activos: pd.DataFrame, precios: pd.DataFrame
+) -> pd.DataFrame:
+    tabla = precios.pivot(index="fecha", columns="ticker", values="precio").ffill()
+    tabla = tabla[tabla.index >= validos["fecha"].min()]
+
+    valor = []
+    aportado = []
+    for fecha in tabla.index:
+        hasta = validos[validos["fecha"] <= fecha]
+        total = 0
+        for i in range(len(activos)):
+            ops = hasta[hasta["isin"] == activos.loc[i, "isin"]]
+            titulos = (
+                ops[ops["tipo"] == "compra"]["titulos"].sum()
+                - ops[ops["tipo"] == "venta"]["titulos"].sum()
+            )
+            if titulos > 0:
+                total = total + titulos * tabla.loc[fecha, activos.loc[i, "ticker"]]
+        compras = hasta[hasta["tipo"] == "compra"]
+        ventas = hasta[hasta["tipo"] == "venta"]
+        valor.append(total)
+        aportado.append(
+            compras["importe"].sum()
+            + compras["comision"].sum()
+            - ventas["importe"].sum()
+            + ventas["comision"].sum()
+        )
+
+    evolucion = pd.DataFrame()
+    evolucion["fecha"] = tabla.index
+    evolucion["valor"] = valor
+    evolucion["aportado"] = aportado
+    return evolucion
+
+
+def actualizar_datos(fichero: str = "operaciones_ejemplo.csv") -> None:
+    operaciones = leer_tabla(DATA_DIR / fichero)
+    validos, errores = validar_operaciones(operaciones)
+    activos = normalize_columns(leer_tabla(DATA_DIR / "activos.csv"))
+    precios = descargar_precios_cartera(activos["ticker"].tolist())
+    posiciones = calcular_posiciones(validos, activos, precios)
+    evolucion = calcular_evolucion(validos, activos, precios)
+
+    validos.to_csv(DATA_DIR / "operaciones_limpias.csv", index=False)
+    posiciones.to_csv(DATA_DIR / "posiciones.csv", index=False)
+    evolucion.to_csv(DATA_DIR / "evolucion.csv", index=False)
+    print("operaciones válidas:", len(validos), "| errores:", len(errores))
+    print("posiciones:", len(posiciones), "| días de evolución:", len(evolucion))
+
+
+if __name__ == "__main__":
+    actualizar_datos()
