@@ -64,9 +64,9 @@ def tarjeta(titulo: str, valor: str, color: str = "black") -> html.Div:
         ],
         style={
             "display": "inline-block",
-            "width": "200px",
-            "padding": "15px",
-            "margin": "10px",
+            "width": "140px",
+            "padding": "12px",
+            "margin": "6px",
             "backgroundColor": "white",
             "border-radius": "8px",
             "box-shadow": "0px 1px 4px lightgray",
