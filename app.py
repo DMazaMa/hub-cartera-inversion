@@ -6,11 +6,13 @@ from src.etl import DATA_DIR, indices, leer_tabla, normalize_columns
 from src.etl import rentabilidad_mensual
 from src.graphics import grafico_comparacion, grafico_composicion
 from src.graphics import grafico_drawdown, grafico_evolucion, grafico_mensual
-from src.graphics import grafico_pesos, grafico_plusvalias
+from src.graphics import grafico_historico, grafico_pesos, grafico_plusvalias
 
 posiciones = pd.read_csv(DATA_DIR / "posiciones.csv")
 evolucion = pd.read_csv(DATA_DIR / "evolucion.csv")
 precios_indices = pd.read_csv(DATA_DIR / "indices.csv")
+precios = pd.read_csv(DATA_DIR / "precios.csv")
+precios["fecha"] = pd.to_datetime(precios["fecha"])
 mensual = rentabilidad_mensual(evolucion)
 operaciones = pd.read_csv(DATA_DIR / "operaciones_limpias.csv")
 operaciones["fecha"] = pd.to_datetime(operaciones["fecha"])
@@ -34,8 +36,22 @@ for r in evolucion[evolucion["fecha"] >= anio_actual + "-01-01"]["rendimiento"]:
     acumulado = acumulado * (1 + r)
 rentabilidad_ytd = (acumulado - 1) * 100
 
-secciones = ["Inicio", "Cartera", "Composición", "Rentabilidad", "Operaciones"]
-ids_secciones = ["inicio", "cartera", "composicion", "rentabilidad", "operaciones"]
+secciones = [
+    "Inicio",
+    "Cartera",
+    "Composición",
+    "Rentabilidad",
+    "Operaciones",
+    "Ficha de activo",
+]
+ids_secciones = [
+    "inicio",
+    "cartera",
+    "composicion",
+    "rentabilidad",
+    "operaciones",
+    "ficha",
+]
 
 
 def formato(numero: float, simbolo: str = " €") -> str:
@@ -159,6 +175,12 @@ cabeceras_cartera = [
 options_dropdown_activo = []
 for isin in nombres.keys():
     options_dropdown_activo.append({"label": nombres[isin], "value": isin})
+
+options_dropdown_ficha = []
+for i in range(len(posiciones)):
+    options_dropdown_ficha.append(
+        {"label": posiciones.loc[i, "nombre"], "value": posiciones.loc[i, "isin"]}
+    )
 
 options_dropdown_tipo = []
 for tipo in ["compra", "venta", "dividendo"]:
@@ -466,6 +488,25 @@ app.layout = html.Div(
             ],
             id="seccion_operaciones",
         ),
+        html.Div(
+            children=[
+                html.H2(
+                    children=["Ficha de activo"],
+                    style={"margin": "10px"},
+                ),
+                dcc.Dropdown(
+                    options=options_dropdown_ficha,
+                    value=posiciones.loc[0, "isin"],
+                    clearable=False,
+                    id="dropdown_ficha",
+                    style={"width": "250px", "margin": "10px"},
+                ),
+                html.P(id="nombre_ficha", style={"margin": "10px", "color": "gray"}),
+                html.Div(id="datos_ficha"),
+                dcc.Graph(id="figura_historico", style={"margin": "10px"}),
+            ],
+            id="seccion_ficha",
+        ),
     ],
     style={
         "font-family": "Arial",
@@ -481,18 +522,23 @@ app.layout = html.Div(
     Output("seccion_composicion", "style"),
     Output("seccion_rentabilidad", "style"),
     Output("seccion_operaciones", "style"),
+    Output("seccion_ficha", "style"),
     Output("boton_inicio", "style"),
     Output("boton_cartera", "style"),
     Output("boton_composicion", "style"),
     Output("boton_rentabilidad", "style"),
     Output("boton_operaciones", "style"),
+    Output("boton_ficha", "style"),
     Input("boton_inicio", "n_clicks"),
     Input("boton_cartera", "n_clicks"),
     Input("boton_composicion", "n_clicks"),
     Input("boton_rentabilidad", "n_clicks"),
     Input("boton_operaciones", "n_clicks"),
+    Input("boton_ficha", "n_clicks"),
 )
-def mostrar_seccion(n_inicio, n_cartera, n_composicion, n_rentabilidad, n_operaciones):
+def mostrar_seccion(
+    n_inicio, n_cartera, n_composicion, n_rentabilidad, n_operaciones, n_ficha
+):
     pulsado = ctx.triggered_id
     if pulsado is None:
         pulsado = "boton_inicio"
@@ -574,6 +620,66 @@ def checklist_callback(n_clicks, checklist_value):
 def comparar_indice(nombre):
     indice = precios_indices[precios_indices["ticker"] == indices[nombre]]
     return grafico_comparacion(evolucion, indice, nombre)
+
+
+@app.callback(
+    Output("figura_historico", "figure"),
+    Output("figura_historico", "style"),
+    Output("datos_ficha", "children"),
+    Output("nombre_ficha", "children"),
+    Input("dropdown_ficha", "value"),
+)
+def actualizar_ficha(isin):
+    if isin:
+        posicion = posiciones[posiciones["isin"] == isin].iloc[0]
+        serie = precios[precios["ticker"] == posicion["ticker"]]
+        ops = operaciones[operaciones["isin"] == isin]
+
+        rentabilidad_anual = (
+            serie["precio"].iloc[-1] / serie["precio"].iloc[-252] - 1
+        ) * 100
+        volatilidad_activo = serie["precio"].pct_change().std() * (252**0.5) * 100
+
+        datos = [
+            tarjeta("Precio actual", formato(posicion["precio_actual"])),
+            tarjeta(
+                "Variación del día",
+                formato(posicion["variacion_dia"], " %"),
+                color_signo(posicion["variacion_dia"]),
+            ),
+            tarjeta("Títulos", formato(posicion["titulos"], "")),
+            tarjeta("Precio medio", formato(posicion["precio_medio"])),
+            tarjeta("Valor", formato(posicion["valor"])),
+            tarjeta(
+                "Plusvalía",
+                formato(posicion["plusvalia_pct"], " %"),
+                color_signo(posicion["plusvalia_pct"]),
+            ),
+            tarjeta(
+                "Rentabilidad 1 año",
+                formato(rentabilidad_anual, " %"),
+                color_signo(rentabilidad_anual),
+            ),
+            tarjeta("Volatilidad anual", formato(volatilidad_activo, " %")),
+            tarjeta("Dividendos cobrados", formato(posicion["dividendos"])),
+        ]
+        nombre = (
+            posicion["activo"]
+            + " | "
+            + posicion["clase"]
+            + " | "
+            + posicion["sector"]
+            + " | "
+            + posicion["region"]
+            + " | ISIN "
+            + isin
+        )
+        fig = grafico_historico(
+            serie, ops, posicion["precio_medio"], posicion["nombre"]
+        )
+        return (fig, {"display": "block", "margin": "10px"}, datos, nombre)
+    else:
+        return (go.Figure(data=[], layout={}), {"display": "none"}, [], "")
 
 
 if __name__ == "__main__":

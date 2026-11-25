@@ -206,3 +206,56 @@ def grafico_drawdown(rentabilidades: pd.DataFrame) -> go.Figure:
         margin=dict(l=40, r=20, t=60, b=40),
     )
     return fig
+
+
+def grafico_historico(
+    serie: pd.DataFrame, ops: pd.DataFrame, precio_medio: float, nombre: str
+) -> go.Figure:
+    compras = ops[ops["tipo"] == "compra"]
+    ventas = ops[ops["tipo"] == "venta"]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=serie["fecha"],
+            y=serie["precio"],
+            mode="lines",
+            line=dict(color="steelblue", width=2),
+            name="Precio",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[serie["fecha"].iloc[0], serie["fecha"].iloc[-1]],
+            y=[precio_medio, precio_medio],
+            mode="lines",
+            line=dict(color="darkorange", dash="dash"),
+            name="Precio medio",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=compras["fecha"],
+            y=compras["precio"],
+            mode="markers",
+            marker=dict(color="mediumseagreen", size=9, symbol="triangle-up"),
+            name="Compras",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=ventas["fecha"],
+            y=ventas["precio"],
+            mode="markers",
+            marker=dict(color="firebrick", size=9, symbol="triangle-down"),
+            name="Ventas",
+        )
+    )
+    fig.update_layout(
+        title="Histórico de precios de " + nombre,
+        yaxis_title="Precio (€)",
+        plot_bgcolor="white",
+        legend=dict(orientation="h", y=-0.15),
+        margin=dict(l=40, r=20, t=60, b=40),
+    )
+    return fig
