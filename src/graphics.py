@@ -289,3 +289,56 @@ def grafico_volatilidad(prediccion: pd.DataFrame, nombre: str) -> go.Figure:
         margin=dict(l=40, r=20, t=60, b=40),
     )
     return fig
+
+
+def grafico_grupos(grupos: pd.DataFrame) -> go.Figure:
+    colores = {
+        "Riesgo bajo": "mediumseagreen",
+        "Riesgo medio": "darkorange",
+        "Riesgo alto": "firebrick",
+    }
+    fig = go.Figure()
+    for perfil in colores.keys():
+        df = grupos[grupos["perfil"] == perfil]
+        fig.add_trace(
+            go.Scatter(
+                x=df["volatilidad"],
+                y=df["rentabilidad"],
+                mode="markers+text",
+                text=df["nombre"],
+                textposition="top center",
+                marker=dict(color=colores[perfil], size=14),
+                name=perfil,
+            )
+        )
+    fig.update_layout(
+        title="Grupos de riesgo de las posiciones (K-Means)",
+        xaxis_title="Volatilidad anual (%)",
+        yaxis_title="Rentabilidad anual media (%)",
+        plot_bgcolor="white",
+        legend=dict(orientation="h", y=-0.2),
+        margin=dict(l=40, r=20, t=60, b=40),
+    )
+    return fig
+
+
+def grafico_codo(codo: pd.DataFrame) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=codo["k"],
+            y=codo["distortion"],
+            mode="lines+markers",
+            line=dict(color="steelblue"),
+            marker=dict(symbol="x", size=10),
+        )
+    )
+    fig.update_layout(
+        title="Método del codo: búsqueda de k",
+        xaxis_title="k",
+        xaxis=dict(dtick=1),
+        yaxis_title="Inercia (distortion)",
+        plot_bgcolor="white",
+        margin=dict(l=40, r=20, t=60, b=40),
+    )
+    return fig

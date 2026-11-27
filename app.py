@@ -7,7 +7,7 @@ from src.etl import rentabilidad_mensual
 from src.graphics import grafico_comparacion, grafico_composicion
 from src.graphics import grafico_drawdown, grafico_evolucion, grafico_mensual
 from src.graphics import grafico_historico, grafico_pesos, grafico_plusvalias
-from src.graphics import grafico_volatilidad
+from src.graphics import grafico_codo, grafico_grupos, grafico_volatilidad
 from src.model import predecir_volatilidad
 
 posiciones = pd.read_csv(DATA_DIR / "posiciones.csv")
@@ -16,6 +16,9 @@ precios_indices = pd.read_csv(DATA_DIR / "indices.csv")
 precios = pd.read_csv(DATA_DIR / "precios.csv")
 precios["fecha"] = pd.to_datetime(precios["fecha"])
 metricas = pd.read_csv(DATA_DIR / "metricas_modelos.csv")
+codo = pd.read_csv(DATA_DIR / "codo.csv")
+grupos = pd.read_csv(DATA_DIR / "grupos.csv")
+grupos = grupos.merge(posiciones[["ticker", "nombre"]], on="ticker")
 mensual = rentabilidad_mensual(evolucion)
 operaciones = pd.read_csv(DATA_DIR / "operaciones_limpias.csv")
 operaciones["fecha"] = pd.to_datetime(operaciones["fecha"])
@@ -376,6 +379,30 @@ app.layout = html.Div(
                 dcc.Graph(
                     id="pie_charts",
                     style={"display": "none"},
+                ),
+                html.H3(
+                    children=["¿Está diversificada de verdad?"],
+                    style={"margin": "20px 10px 10px 10px"},
+                ),
+                html.P(
+                    children=[
+                        "K-Means agrupa las posiciones según su rentabilidad y"
+                        " volatilidad de los últimos 5 años. He elegido 3 grupos con"
+                        " el método del codo (silhouette = "
+                        + formato(codo.loc[2, "silhouette"], "")
+                        + ")."
+                    ],
+                    style={"margin": "10px", "color": "gray"},
+                ),
+                dcc.Graph(
+                    figure=grafico_grupos(grupos),
+                    id="figura_grupos",
+                    style={"margin": "10px"},
+                ),
+                dcc.Graph(
+                    figure=grafico_codo(codo),
+                    id="figura_codo",
+                    style={"margin": "10px"},
                 ),
             ],
             id="seccion_composicion",
