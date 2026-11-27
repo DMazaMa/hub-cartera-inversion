@@ -7,12 +7,15 @@ from src.etl import rentabilidad_mensual
 from src.graphics import grafico_comparacion, grafico_composicion
 from src.graphics import grafico_drawdown, grafico_evolucion, grafico_mensual
 from src.graphics import grafico_historico, grafico_pesos, grafico_plusvalias
+from src.graphics import grafico_volatilidad
+from src.model import predecir_volatilidad
 
 posiciones = pd.read_csv(DATA_DIR / "posiciones.csv")
 evolucion = pd.read_csv(DATA_DIR / "evolucion.csv")
 precios_indices = pd.read_csv(DATA_DIR / "indices.csv")
 precios = pd.read_csv(DATA_DIR / "precios.csv")
 precios["fecha"] = pd.to_datetime(precios["fecha"])
+metricas = pd.read_csv(DATA_DIR / "metricas_modelos.csv")
 mensual = rentabilidad_mensual(evolucion)
 operaciones = pd.read_csv(DATA_DIR / "operaciones_limpias.csv")
 operaciones["fecha"] = pd.to_datetime(operaciones["fecha"])
@@ -504,6 +507,20 @@ app.layout = html.Div(
                 html.P(id="nombre_ficha", style={"margin": "10px", "color": "gray"}),
                 html.Div(id="datos_ficha"),
                 dcc.Graph(id="figura_historico", style={"margin": "10px"}),
+                html.H3(
+                    children=["Modelo de volatilidad"],
+                    style={"margin": "20px 10px 10px 10px"},
+                ),
+                html.P(
+                    children=[
+                        "ElasticNet entrenado con la volatilidad de los últimos 5, 21 y"
+                        " 63 días para predecir la volatilidad del mes siguiente."
+                        " Es una estimación de riesgo, no una recomendación."
+                    ],
+                    style={"margin": "10px", "color": "gray"},
+                ),
+                html.Div(id="datos_modelo"),
+                dcc.Graph(id="figura_volatilidad", style={"margin": "10px"}),
             ],
             id="seccion_ficha",
         ),
@@ -680,6 +697,41 @@ def actualizar_ficha(isin):
         return (fig, {"display": "block", "margin": "10px"}, datos, nombre)
     else:
         return (go.Figure(data=[], layout={}), {"display": "none"}, [], "")
+
+
+@app.callback(
+    Output("figura_volatilidad", "figure"),
+    Output("figura_volatilidad", "style"),
+    Output("datos_modelo", "children"),
+    Input("dropdown_ficha", "value"),
+)
+def actualizar_modelo(isin):
+    if isin:
+        posicion = posiciones[posiciones["isin"] == isin].iloc[0]
+        ticker = posicion["ticker"]
+        serie = precios[precios["ticker"] == ticker]
+        resultado = metricas[metricas["ticker"] == ticker].iloc[0]
+
+        prediccion = predecir_volatilidad(serie, ticker)
+        prevista = prediccion["prediccion"].iloc[-1]
+        actual = prediccion["vol_21"].iloc[-1]
+        test = prediccion[prediccion["fecha"] >= resultado["inicio_test"]]
+
+        datos = [
+            tarjeta("Volatilidad último mes", formato(actual, " %")),
+            tarjeta(
+                "Prevista próximo mes",
+                formato(prevista, " %"),
+                color_signo(actual - prevista),
+            ),
+            tarjeta("Error medio (MAE)", formato(resultado["mae"], " p.p.")),
+            tarjeta("Error sin modelo", formato(resultado["mae_ingenuo"], " p.p.")),
+            tarjeta("R² en test", formato(resultado["r2"], "")),
+        ]
+        fig = grafico_volatilidad(test, posicion["nombre"])
+        return (fig, {"display": "block", "margin": "10px"}, datos)
+    else:
+        return (go.Figure(data=[], layout={}), {"display": "none"}, [])
 
 
 if __name__ == "__main__":

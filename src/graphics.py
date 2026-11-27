@@ -259,3 +259,33 @@ def grafico_historico(
         margin=dict(l=40, r=20, t=60, b=40),
     )
     return fig
+
+
+def grafico_volatilidad(prediccion: pd.DataFrame, nombre: str) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=prediccion["fecha"],
+            y=prediccion["vol_futura"],
+            mode="lines",
+            line=dict(color="steelblue", width=2),
+            name="Volatilidad real del mes siguiente",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=prediccion["fecha"],
+            y=prediccion["prediccion"],
+            mode="lines",
+            line=dict(color="darkorange", dash="dash"),
+            name="Predicción del modelo",
+        )
+    )
+    fig.update_layout(
+        title="Volatilidad prevista de " + nombre + " (periodo de test)",
+        yaxis_title="Volatilidad anual (%)",
+        plot_bgcolor="white",
+        legend=dict(orientation="h", y=-0.15),
+        margin=dict(l=40, r=20, t=60, b=40),
+    )
+    return fig
