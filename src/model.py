@@ -3,8 +3,10 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.cluster import KMeans
 from sklearn.linear_model import ElasticNet
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import silhouette_score
 from sklearn.model_selection import train_test_split
 
 from src.etl import DATA_DIR
@@ -74,5 +76,65 @@ def predecir_volatilidad(serie: pd.DataFrame, ticker: str) -> pd.DataFrame:
     return df
 
 
+def variables_activos(precios: pd.DataFrame) -> pd.DataFrame:
+    filas = []
+    for ticker in precios["ticker"].unique():
+        serie = precios[precios["ticker"] == ticker]
+        rendimientos = serie["precio"].pct_change()
+        filas.append(
+            {
+                "ticker": ticker,
+                "rentabilidad": rendimientos.mean() * 252 * 100,
+                "volatilidad": rendimientos.std() * (252**0.5) * 100,
+            }
+        )
+    return pd.DataFrame(filas)
+
+
+def agrupar_activos(fichero: str = "precios.csv", n_clusters: int = 3) -> pd.DataFrame:
+    precios = pd.read_csv(DATA_DIR / fichero)
+    df = variables_activos(precios)
+    X = df[["rentabilidad", "volatilidad"]].to_numpy()
+
+    K = range(1, len(df))
+    distortions = []
+    silhouettes = []
+    for k in K:
+        model = KMeans(n_clusters=k, random_state=123, n_init=10)
+        model.fit(X)
+        distortions.append(model.inertia_)
+        if k > 1:
+            silhouettes.append(silhouette_score(X, model.predict(X)))
+        else:
+            silhouettes.append(0)
+
+    kmeans = KMeans(n_clusters=n_clusters, random_state=123, n_init=10)
+    kmeans.fit(X)
+    df["grupo"] = kmeans.predict(X)
+    print("silhouette:", round(silhouette_score(X, df["grupo"]), 4))
+
+    medias = df.groupby("grupo", as_index=False)["volatilidad"].mean()
+    medias = medias.sort_values("volatilidad").reset_index(drop=True)
+    nombres_perfil = ["Riesgo bajo", "Riesgo medio", "Riesgo alto"]
+    perfiles = {}
+    for i in range(len(medias)):
+        perfiles[medias.loc[i, "grupo"]] = nombres_perfil[i]
+    perfil = []
+    for grupo in df["grupo"]:
+        perfil.append(perfiles[grupo])
+    df["perfil"] = perfil
+
+    codo = pd.DataFrame()
+    codo["k"] = list(K)
+    codo["distortion"] = distortions
+    codo["silhouette"] = silhouettes
+
+    joblib.dump(kmeans, MODELS_DIR / "kmeans.joblib")
+    df.to_csv(DATA_DIR / "grupos.csv", index=False)
+    codo.to_csv(DATA_DIR / "codo.csv", index=False)
+    return df
+
+
 if __name__ == "__main__":
     entrenar_modelos()
+    agrupar_activos()
